@@ -239,3 +239,17 @@ Six skills (`~/.claude/skills/`) and two review personas (`~/.claude/agents/`) p
 | About to commit a non-trivial or irreversible decision, or working in unfamiliar code | `doubt-driven-development` (spawns a fresh-context adversarial reviewer from the main session only — never from inside a persona/subagent) |
 
 **Never install the `agent-skills` plugin/marketplace itself or its `using-agent-skills` meta-skill.** It duplicates Superpowers' job as session router — running both as active routers causes them to fight over phase sequencing and command names. Cherry-picked skills only.
+
+---
+
+## SECTION 8: Local Doc Preview (design docs, specs, plans)
+### (Automatic local HTTP preview for specs and plans — no need to ask)
+
+Every design doc, spec, or plan written or edited anywhere under `docs/superpowers/specs/**/*.md` or `.planning/**/*.md`, in any project, is automatically served on a local HTTP preview — no need to ask for it.
+
+**Mechanism:** a global `PostToolUse` hook (matcher `Write|Edit`) in `~/.claude/settings.json` calls `~/.claude/tools/doc-viewer/hook.py` on every matching file write/edit. This is enforced by the hook, not by this file — CLAUDE.md text alone cannot trigger automated actions; only settings.json hooks execute on events. This section documents the behavior for visibility.
+
+- One persistent, idempotent server per project (`~/.claude/tools/doc-viewer/index_server.py`), tracked in `~/.claude/tools/doc-viewer/registry.json` (project root → port). Re-scans the directory and re-reads file content on every browser refresh — no restart needed as docs are added or edited.
+- The server lists all matching docs in a sidebar (grouped by top-level folder, most-recently-modified first) and renders the selected one as GitHub-flavored markdown.
+- The hook surfaces the URL back into context after each matching Write/Edit (`hookSpecificOutput.additionalContext` + `systemMessage`) — relay it to the user rather than re-deriving or re-announcing the feature.
+- Binds to `127.0.0.1` only (not exposed on the network). Servers persist across sessions until the machine restarts or the process is stopped manually.
